@@ -1,0 +1,466 @@
+#define _CRT_SECURE_NO_WARNINGS
+#define _CPCD_FILE_WRITEMODE	"w"
+#define _CPCD_FILE_NAME_RGB	"export.ppm"
+#define _CPCD_FILE_NAME_GRA	"export.pgm"
+#define _CPCD_FILE_PGM		"P2\n"
+#define _CPCD_FILE_PPM		"P3\n"
+#define _CPCD_FILE_S			"255\n"
+#define _CPCD_FILE_WH		"%hu  %hu\n"
+#define _CPCD_FILE_COLOR		"%hu  %hu  %hu    "
+#define _CPCD_FILE_GRAY		"%hu  "
+#define _CPCD_FILE_BRK		"\n"
+#define _CPCD_WINDOW_CLASS	"CPCD"
+#define _CPCD_WINDOW_CONSOLE "CON", "w", stdout
+#define _CPCD_WINDOW_DEFAULT "> Initialized window and console...\n\n"
+#define _CPCD_WINDOW_WITITLE	""
+#define _CPCD_WINDOW_EHWND	"window handle damaged"
+#define _CPCD_WINDOW_EREG	"windows registration failed"
+
+#include "CPCD.h"
+
+#ifdef _CPCD_WINDOW
+_CPCD_DATA_WNDC wc;
+_CPCD_DATA_HWND hwnd;
+_CPCD_DATA_MSG Msg;
+_CPCD_DATA_ULINT ui_frame = 0;
+_CPCD_DATA_HDC hdc_frame;
+#endif
+
+_CPCD_ALIAS _CPCD_CREATE(_CPCD_DATA_DEF USI_WIDTH, _CPCD_DATA_DEF USI_HEIGTH)
+{
+	_CPCD_ALIAS _CPP_CREATE;
+	_CPP_CREATE.USI_HEIGHT = USI_HEIGTH;
+	_CPP_CREATE.USI_WIDTH = USI_WIDTH;
+	_CPP_CREATE.C_COLOR = (_CPCD_ALIASCOLOR**)malloc(USI_HEIGTH * sizeof(_CPCD_ALIASCOLOR*));
+	for (_CPCD_DATA_DEF usi_row = 0; usi_row < USI_HEIGTH; usi_row++)
+		_CPP_CREATE.C_COLOR[usi_row] = (_CPCD_ALIASCOLOR*)malloc(USI_WIDTH * sizeof(_CPCD_ALIASCOLOR));
+	return _CPP_CREATE;
+}
+_CPCD_SPRITE _CPCD_SPR_CREATE(_CPCD_DATA_DEF USI_WIDTH, _CPCD_DATA_DEF USI_HEIGHT, _CPCD_ALIASVECTOR* V_POSITION)
+{
+	_CPCD_SPRITE _CPCD_SPR_CREATE;
+	_CPCD_SPR_CREATE.USI_HEIGHT = USI_HEIGHT;
+	_CPCD_SPR_CREATE.USI_WIDTH = USI_WIDTH;
+	_CPCD_SPR_CREATE.C_COLOR = (_CPCD_ALIASCOLOR**)malloc(USI_HEIGHT * sizeof(_CPCD_ALIASCOLOR*));
+	for (_CPCD_DATA_DEF usi_row = 0; usi_row < USI_HEIGHT; usi_row++)
+		_CPCD_SPR_CREATE.C_COLOR[usi_row] = (_CPCD_ALIASCOLOR*)malloc(USI_WIDTH * sizeof(_CPCD_ALIASCOLOR));
+	if (V_POSITION != _CPCD_NULL) {
+		_CPCD_SPR_CREATE.V_POSITION = *V_POSITION;
+	}
+	return _CPCD_SPR_CREATE;
+}
+
+void _CPCD_CLEAR(_CPCD_ALIAS* CPCD_CANVAS)
+{
+	for (_CPCD_DATA_DEF X = 0; X <CPCD_CANVAS->USI_HEIGHT; X++)
+	{
+		for (_CPCD_DATA_DEF Y = 0; Y < CPCD_CANVAS->USI_WIDTH; Y++)
+		{
+#ifdef _CPCD_FULLRGB
+			CPCD_CANVAS->C_COLOR[X][Y].R = _CPCD_BACKCOLOR;
+			CPCD_CANVAS->C_COLOR[X][Y].G = _CPCD_BACKCOLOR;
+			CPCD_CANVAS->C_COLOR[X][Y].B = _CPCD_BACKCOLOR;
+#else	
+			CPCD_CANVAS->C_COLOR[X][Y] = _CPCD_BACKCOLOR;
+#endif 
+		}
+	}
+}
+void _CPCD_DELETE(_CPCD_ALIAS* CPCD_CANVAS)
+{
+	for (_CPCD_DATA_DEF usi_row = 0; usi_row < CPCD_CANVAS->USI_HEIGHT; usi_row++)
+		free(CPCD_CANVAS->C_COLOR[usi_row]);
+	free(CPCD_CANVAS->C_COLOR);
+}
+void _CPCD_DRAWLINE(_CPCD_ALIAS* 	CPCD_CANVAS, _CPCD_ALIASVECTOR	V_LEFT, _CPCD_ALIASVECTOR	V_RIGHT, _CPCD_ALIASCOLOR C_COLOR)
+{
+	_CPCD_DATA_RAT usi_deltax = V_LEFT.X - V_RIGHT.X;
+	_CPCD_DATA_RAT usi_deltay = V_LEFT.Y - V_RIGHT.Y;
+	for (float f_render = 1; f_render > 0; f_render -= _CPCD_QUALITY)
+	{
+		_CPCD_ALIASVECTOR v_deltavec = { usi_deltax*f_render + V_RIGHT.X,usi_deltay*f_render + V_RIGHT.Y };
+		_CPCD_SETPIXEL(CPCD_CANVAS, v_deltavec, C_COLOR);
+	}
+}
+
+void _CPCD_DRAWRECT(_CPCD_ALIAS* CPCD_CANVAS, _CPCD_ALIASVECTOR	V_LEFTUPPER, _CPCD_ALIASVECTOR	V_RIGHTBOT, _CPCD_ALIASCOLOR		C_COLOR, _CPCD_DATA_DRAWMODE DM_MODE)
+{
+	if (DM_MODE == _CPCD_DM_FILLED)
+	{
+		for (_CPCD_DATA_DEF i = 0; i < V_RIGHTBOT.X - V_LEFTUPPER.X; i++)
+		{
+			_CPCD_DRAWLINE(CPCD_CANVAS, (_CPCD_ALIASVECTOR) { V_LEFTUPPER.X + i, V_LEFTUPPER.Y }, (_CPCD_ALIASVECTOR) { V_LEFTUPPER.X + i, V_RIGHTBOT.Y }, C_COLOR);
+		}
+	}
+	else if (DM_MODE == _CPCD_DM_OUTLINE)
+	{
+		_CPCD_DRAWLINE(CPCD_CANVAS, V_LEFTUPPER, (_CPCD_ALIASVECTOR) { V_LEFTUPPER.X, V_RIGHTBOT.Y }, C_COLOR);
+		_CPCD_DRAWLINE(CPCD_CANVAS, V_LEFTUPPER, (_CPCD_ALIASVECTOR) { V_RIGHTBOT.X, V_LEFTUPPER.Y }, C_COLOR);
+		_CPCD_DRAWLINE(CPCD_CANVAS, V_RIGHTBOT, (_CPCD_ALIASVECTOR) { V_LEFTUPPER.X, V_RIGHTBOT.Y }, C_COLOR);
+		_CPCD_DRAWLINE(CPCD_CANVAS, V_RIGHTBOT, (_CPCD_ALIASVECTOR) { V_RIGHTBOT.X, V_LEFTUPPER.Y }, C_COLOR);
+	}
+}
+void _CPCD_DRAWTRI(_CPCD_ALIAS* CPCD_CANVAS, _CPCD_ALIASVECTOR V_ONE, _CPCD_ALIASVECTOR V_TWO, _CPCD_ALIASVECTOR V_THREE, _CPCD_ALIASCOLOR	C_COLOR, _CPCD_DATA_DRAWMODE DM_MODE)
+{
+	if (DM_MODE == _CPCD_DM_FILLED)
+	{
+		_CPCD_DATA_RAT usi_deltax = V_ONE.X - V_TWO.X;
+		_CPCD_DATA_RAT usi_deltay = V_ONE.Y - V_TWO.Y;
+		for (float f_render = 1; f_render > 0; f_render -= _CPCD_QUALITY)
+		{
+			_CPCD_ALIASVECTOR v_deltavec = { usi_deltax*f_render + V_TWO.X,usi_deltay*f_render + V_TWO.Y };
+			_CPCD_DRAWLINE(CPCD_CANVAS, V_THREE, v_deltavec, C_COLOR);
+		}
+	}
+	else if (DM_MODE == _CPCD_DM_OUTLINE)
+	{
+		_CPCD_DRAWLINE(CPCD_CANVAS, V_ONE, V_TWO, C_COLOR);
+		_CPCD_DRAWLINE(CPCD_CANVAS, V_TWO, V_THREE, C_COLOR);
+		_CPCD_DRAWLINE(CPCD_CANVAS, V_THREE, V_ONE, C_COLOR);
+	}
+}
+
+_CPCD_ALIASCOLOR	_CPCD_GETPIXEL(_CPCD_ALIAS* CPCD_CANVAS, _CPCD_ALIASVECTOR V_POINT) {
+	return CPCD_CANVAS->C_COLOR[V_POINT.Y][V_POINT.X];
+}
+
+void _CPCD_SETPIXEL(_CPCD_ALIAS* CPCD_CANVAS, _CPCD_ALIASVECTOR V_POINT, _CPCD_ALIASCOLOR	C_COLOR) {
+#ifdef _CPCD_WINDOW
+#ifndef _CPCD_NOBUFFER
+	if (V_POINT.X >= 0 && V_POINT.Y >= 0 && V_POINT.X < CPCD_CANVAS->USI_WIDTH && V_POINT.Y < CPCD_CANVAS->USI_HEIGHT) {
+		CPCD_CANVAS->C_COLOR[V_POINT.Y][V_POINT.X] = C_COLOR;
+#ifndef _CPCD_ONLYBUFFER
+#ifdef _CPCD_FULLRGB
+		SetPixel(hdc_frame, V_POINT.X, V_POINT.Y, RGB(C_COLOR.R, C_COLOR.G, C_COLOR.B));
+#else
+		SetPixel(hdc_frame, V_POINT.X, V_POINT.Y, RGB(C_COLOR, C_COLOR, C_COLOR));
+#endif	
+#endif
+	}
+#else 
+	if (V_POINT.X >= 0 && V_POINT.Y >= 0) {
+#ifdef _CPCD_FULLRGB
+		SetPixel(hdc_frame, V_POINT.X, V_POINT.Y, RGB(C_COLOR.R, C_COLOR.G, C_COLOR.B));
+#else
+		SetPixel(hdc_frame, V_POINT.X, V_POINT.Y, RGB(C_COLOR, C_COLOR, C_COLOR));
+#endif	
+	}
+#endif
+#else 
+	if (V_POINT.X >= 0 && V_POINT.Y >= 0 && V_POINT.X < CPCD_CANVAS->USI_WIDTH && V_POINT.Y < CPCD_CANVAS->USI_HEIGHT)
+		CPCD_CANVAS->C_COLOR[V_POINT.Y][V_POINT.X] = C_COLOR;
+#endif
+}
+#ifdef _CPCD_WINDOW
+#ifndef _CPCD_FULLAC
+_CPCD_STARTUP{
+	_CPCD_ALIASWINDOW win = { 1000, 500, 2, _CPCD_WINDOW_WINAME };
+return &win;
+}
+#endif
+long __stdcall WndProc(_CPCD_DATA_HWND hwnd, _CPCD_DATA_UINT msg, _CPCD_DATA_WPARAM wParam, _CPCD_DATA_LPARAM lParam) {
+	if (msg == WM_CLOSE)DestroyWindow(hwnd);
+	else if (msg == WM_DESTROY)PostQuitMessage(0);
+	else return DefWindowProc(hwnd, msg, wParam, lParam);
+	return 0;
+}
+int __stdcall WinMain(_CPCD_DATA_HINTS hInstance, _CPCD_DATA_HINTS hPrevInstance, _CPCD_DATA_LPSTR lpCmdLine, int nCmdShow) {
+#ifdef _CPCD_SHOWCONSOL
+	AllocConsole();
+	freopen(_CPCD_WINDOW_CONSOLE);
+#endif
+	printf(_CPCD_WINDOW_DEFAULT);
+
+
+	_CPCD_ALIASWINDOW* win_window = _CPCD_STARTUP_F(hInstance, hPrevInstance, lpCmdLine, nCmdShow);
+
+	wc.hbrBackground = (_CPCD_DATA_HBRUSH)(win_window->USI_BACKCOLOR); wc.cbSize = sizeof(_CPCD_DATA_WNDC);
+	wc.lpfnWndProc = WndProc; wc.hInstance = hInstance;
+	wc.lpszClassName = _CPCD_WINDOW_CLASS; wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+
+	if (!RegisterClassEx(&wc))return 0;
+
+	hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, _CPCD_WINDOW_CLASS, _CPCD_WINDOW_WINAME, WS_OVERLAPPEDWINDOW,
+		CW_USEDEFAULT, CW_USEDEFAULT, _CPCD_WINDOW_WIDTH, _CPCD_WINDOW_HEIGHT, NULL, NULL, hInstance, NULL);
+
+	if (hwnd == NULL)return 0;
+
+	ShowWindow(hwnd, nCmdShow);
+	UpdateWindow(hwnd);
+	hdc_frame = GetDC(hwnd);
+	if (_CPCD_MAIN_F(hwnd) != 0)return 0;
+	_CPCD_DATA_RAT us_switch = 1;
+	_CDD_DATA_TIME t_pasttime = clock();
+	while (GetMessage(&Msg, NULL, 0, 0) > 0) {
+
+#ifdef _CPCD_SINGLEFRAME
+		if (ui_frame == 0)
+#endif 
+			if (_CPCD_UPDATE_F(ui_frame, clock() - t_pasttime, Msg) != 0)return 0;
+		t_pasttime = clock();
+		if (us_switch == 1) {
+			TranslateMessage(&Msg);
+			DispatchMessage(&Msg);
+		}
+		ui_frame++;
+		if (GetAsyncKeyState(VK_NUMPAD0) != 0) {
+			us_switch *= -1;
+			Sleep(200);
+		}
+	}
+	_CPCD_END_F(Msg.wParam, ui_frame);
+	ReleaseDC(NULL, hdc_frame);
+	return Msg.wParam;
+}
+void _CPCD_DRAWBUFFER(_CPCD_ALIAS* CPCD_CANVAS) {
+	_CPCD_DATA_COLR *col_buffer = (_CPCD_DATA_COLR*)malloc(CPCD_CANVAS->USI_HEIGHT * CPCD_CANVAS->USI_WIDTH * sizeof(_CPCD_DATA_COLR));
+	for (_CPCD_DATA_UINT x = 0, c = 0; x < CPCD_CANVAS->USI_HEIGHT; x++)
+		for (_CPCD_DATA_UINT y = 0; y < CPCD_CANVAS->USI_WIDTH; y++) {
+#ifdef _CPCD_FULLRGB
+			col_buffer[c] = RGB(CPCD_CANVAS->C_COLOR[x][y].B, CPCD_CANVAS->C_COLOR[x][y].G, CPCD_CANVAS->C_COLOR[x][y].R);
+#else
+			col_buffer[c] = RGB(CPCD_CANVAS->C_COLOR[x][y], CPCD_CANVAS->C_COLOR[x][y], CPCD_CANVAS->C_COLOR[x][y]);
+#endif	
+			c++;
+		}
+	_CPCD_DATA_HBITM bmp_map = CreateBitmap(CPCD_CANVAS->USI_WIDTH, CPCD_CANVAS->USI_HEIGHT, 1, 8 * 4, (void*)col_buffer);
+	_CPCD_DATA_HDC hdc_src = CreateCompatibleDC(hdc_frame);
+	SelectObject(hdc_src, bmp_map);
+	BitBlt(hdc_frame, 0, 0, CPCD_CANVAS->USI_WIDTH, CPCD_CANVAS->USI_HEIGHT, hdc_src, 0, 0, SRCCOPY);
+	free(col_buffer);
+	DeleteObject(bmp_map);
+	DeleteDC(hdc_src);
+}
+#endif 
+
+void _CPCD_DRAWSPRITE(_CPCD_ALIAS * CPCD_CANVAS, _CPCD_SPRITE SPR_SPRITE, _CPCD_DATA_DRAWMODE DM_MODE, _CPCD_DATA_DRAWMODE DM_VALUE)
+{
+	_CPCD_ALIASCOLOR	c_color_over, c_color_avr;
+	for (_CPCD_DATA_UINT x = 0, c = 0; x < SPR_SPRITE.USI_HEIGHT; x++)
+		for (_CPCD_DATA_UINT y = 0; y < SPR_SPRITE.USI_WIDTH; y++) {
+
+			switch (DM_MODE)
+			{
+			case _CPCD_SBM_OVERRIDE:
+				_CPCD_SETPIXEL(CPCD_CANVAS, (_CPCD_ALIASVECTOR) { y + SPR_SPRITE.V_POSITION.X, x + SPR_SPRITE.V_POSITION.Y }, SPR_SPRITE.C_COLOR[x][y]);
+				break;
+			case _CPCD_SBM_COMPINE:
+				c_color_over = _CPCD_GETPIXEL(CPCD_CANVAS, (_CPCD_ALIASVECTOR) { y + SPR_SPRITE.V_POSITION.X, x + SPR_SPRITE.V_POSITION.Y });
+#ifdef _CPCD_FULLRGB
+				_CPCD_ALIASCOLOR	c_color_avr_over;
+				c_color_avr_over.R = (SPR_SPRITE.C_COLOR[x][y].R + c_color_over.R) / 2;
+				c_color_avr_over.G = (SPR_SPRITE.C_COLOR[x][y].G + c_color_over.G) / 2;
+				c_color_avr_over.B = (SPR_SPRITE.C_COLOR[x][y].B + c_color_over.B) / 2;
+				_CPCD_SETPIXEL(CPCD_CANVAS, (_CPCD_ALIASVECTOR) { y + SPR_SPRITE.V_POSITION.X, x + SPR_SPRITE.V_POSITION.Y }, c_color_avr_over);
+#else
+				if (c_color_over == 0)c_color_over = 1;
+				_CPCD_SETPIXEL(CPCD_CANVAS, (_CPCD_ALIASVECTOR) { y + SPR_SPRITE.V_POSITION.X, x + SPR_SPRITE.V_POSITION.Y }, (SPR_SPRITE.C_COLOR[x][y] + c_color_over) / 2);
+#endif
+				break;
+			case _CPCD_SBM_BLEND:
+				c_color_over = _CPCD_GETPIXEL(CPCD_CANVAS, (_CPCD_ALIASVECTOR) { y + SPR_SPRITE.V_POSITION.X, x + SPR_SPRITE.V_POSITION.Y });
+#ifdef _CPCD_FULLRGB
+				c_color_avr.R = c_color_over.R;
+				c_color_avr.G = c_color_over.G;
+				c_color_avr.B = c_color_over.B;
+				switch (DM_VALUE)
+				{
+				case _CPCD_C_RED:
+					c_color_avr.R = SPR_SPRITE.C_COLOR[x][y].R;
+					break;
+				case _CPCD_C_GREEN:
+					c_color_avr.G = SPR_SPRITE.C_COLOR[x][y].G;
+					break;
+				case _CPCD_C_BLUE:
+					c_color_avr.B = SPR_SPRITE.C_COLOR[x][y].B;
+					break;
+				case _CPCD_C_REDGREEN:
+					c_color_avr.R = SPR_SPRITE.C_COLOR[x][y].R;
+					c_color_avr.G = SPR_SPRITE.C_COLOR[x][y].G;
+					break;
+				case _CPCD_C_REDBLUE:
+					c_color_avr.R = SPR_SPRITE.C_COLOR[x][y].R;
+					c_color_avr.B = SPR_SPRITE.C_COLOR[x][y].B;
+					break;
+				case _CPCD_C_BLUEGRN:
+					c_color_avr.B = SPR_SPRITE.C_COLOR[x][y].B;
+					c_color_avr.G = SPR_SPRITE.C_COLOR[x][y].G;
+					break;
+				}
+				_CPCD_SETPIXEL(CPCD_CANVAS, (_CPCD_ALIASVECTOR) { y + SPR_SPRITE.V_POSITION.X, x + SPR_SPRITE.V_POSITION.Y }, c_color_avr);
+#else 
+				return;
+#endif
+				break;
+			case _CPCD_SBM_ADD:
+				c_color_over = _CPCD_GETPIXEL(CPCD_CANVAS, (_CPCD_ALIASVECTOR) { y + SPR_SPRITE.V_POSITION.X, x + SPR_SPRITE.V_POSITION.Y });
+#ifdef _CPCD_FULLRGB
+				_CPCD_ALIASCOLOR	c_color_avr;
+				c_color_avr.R = (SPR_SPRITE.C_COLOR[x][y].R + c_color_over.R) % 255;
+				c_color_avr.G = (SPR_SPRITE.C_COLOR[x][y].G + c_color_over.G) % 255;
+				c_color_avr.B = (SPR_SPRITE.C_COLOR[x][y].B + c_color_over.B) % 255;
+				_CPCD_SETPIXEL(CPCD_CANVAS, (_CPCD_ALIASVECTOR) { y + SPR_SPRITE.V_POSITION.X, x + SPR_SPRITE.V_POSITION.Y }, c_color_avr);
+#else
+				if (c_color == 0)c_color = 1;
+				_CPCD_SETPIXEL(CPCD_CANVAS, (_CPCD_ALIASVECTOR) { y + SPR_SPRITE.V_POSITION.X, x + SPR_SPRITE.V_POSITION.Y }, (SPR_SPRITE.C_COLOR[x][y] + c_color) % 255);
+#endif
+				break;
+			}
+
+		}
+}
+
+void _CPCD_CPUSHADER(_CPCD_ALIAS * CPCD_CANVAS, _CPCD_ALIASCOLOR(*cpu_shader)(_CPCD_ALIASCOLOR, _CPCD_ALIASVECTOR))
+{
+	for (_CPCD_DATA_UINT x = 0, c = 0; x < CPCD_CANVAS->USI_HEIGHT; x++)
+		for (_CPCD_DATA_UINT y = 0; y < CPCD_CANVAS->USI_WIDTH; y++) {
+			CPCD_CANVAS->C_COLOR[x][y] = cpu_shader(CPCD_CANVAS->C_COLOR[x][y], (_CPCD_ALIASVECTOR) { x, y });
+		}
+}
+_CPCD_VECGRAPHIC _CPCD_VG_CREATE(_CPCD_UNIONTRANS* T_TRANFORM)
+{
+	_CPCD_VECGRAPHIC _CPCD_VG_CREATE;
+	_CPCD_VG_CREATE.USI_SINZE = 0;
+	if (T_TRANFORM != _CPCD_NULL)_CPCD_VG_CREATE.T_TRANSFORM = *T_TRANFORM;
+	else {
+		_CPCD_VG_CREATE.T_TRANSFORM.USI_ROTATION = 0;
+		_CPCD_VG_CREATE.T_TRANSFORM.V_POSITION.X = 0;
+		_CPCD_VG_CREATE.T_TRANSFORM.V_POSITION.Y = 0;
+		_CPCD_VG_CREATE.T_TRANSFORM.V_SCALE.X = 1;
+		_CPCD_VG_CREATE.T_TRANSFORM.V_SCALE.Y = 1;
+	}
+	return _CPCD_VG_CREATE;
+}
+void _CPCD_VG_PUSHLINE(_CPCD_VECGRAPHIC * VG_GRAPHIC, _CPCD_UNIONLINE L_LINE)
+{
+	_CPCD_UNIONLINE* L_LINES;
+	if (VG_GRAPHIC->USI_SINZE != 0) {
+		VG_GRAPHIC->USI_SINZE++;
+		L_LINES = VG_GRAPHIC->L_LINES;
+		VG_GRAPHIC->L_LINES = malloc(sizeof(_CPCD_UNIONLINE)*VG_GRAPHIC->USI_SINZE);
+		for (_CPCD_DATA_DEF i = 0; i < VG_GRAPHIC->USI_SINZE; i++) {
+			if (i == VG_GRAPHIC->USI_SINZE - 1)
+				VG_GRAPHIC->L_LINES[i] = L_LINE;
+			else
+				VG_GRAPHIC->L_LINES[i] = L_LINES[i];
+		}
+	}
+	else {
+		VG_GRAPHIC->USI_SINZE++;
+		VG_GRAPHIC->L_LINES = (_CPCD_UNIONLINE*)malloc(sizeof(_CPCD_UNIONLINE)*VG_GRAPHIC->USI_SINZE);
+		VG_GRAPHIC->L_LINES[0] = L_LINE;
+	}
+}
+void _CPCD_VG_DRAW(_CPCD_ALIAS* CPCD_CANVAS, _CPCD_VECGRAPHIC VG_GRAPHIC)
+{
+	for (_CPCD_DATA_DEF i = 0; i < VG_GRAPHIC.USI_SINZE; i++)
+	{
+		switch (VG_GRAPHIC.L_LINES[i].USI_MODE)
+		{
+		case _CPCD_DM_LINE:
+			_CPCD_DRAWLINE(CPCD_CANVAS,
+				_CPCD_VECADD(_CPCD_VECMULTI(VG_GRAPHIC.L_LINES[i].V_POS_ONE, VG_GRAPHIC.T_TRANSFORM.V_SCALE), VG_GRAPHIC.T_TRANSFORM.V_POSITION),
+				_CPCD_VECADD(_CPCD_VECMULTI(VG_GRAPHIC.L_LINES[i].V_POS_TWO, VG_GRAPHIC.T_TRANSFORM.V_SCALE), VG_GRAPHIC.T_TRANSFORM.V_POSITION),
+				VG_GRAPHIC.L_LINES[i].C_COLOR
+			);
+			break;
+		case _CPCD_DM_TRI:
+			_CPCD_DRAWTRI(CPCD_CANVAS,
+				_CPCD_VECADD(_CPCD_VECMULTI(VG_GRAPHIC.L_LINES[i].V_POS_ONE, VG_GRAPHIC.T_TRANSFORM.V_SCALE), VG_GRAPHIC.T_TRANSFORM.V_POSITION),
+				_CPCD_VECADD(_CPCD_VECMULTI(VG_GRAPHIC.L_LINES[i].V_POS_TWO, VG_GRAPHIC.T_TRANSFORM.V_SCALE), VG_GRAPHIC.T_TRANSFORM.V_POSITION),
+				_CPCD_VECADD(_CPCD_VECMULTI(VG_GRAPHIC.L_LINES[i + 1].V_POS_TWO, VG_GRAPHIC.T_TRANSFORM.V_SCALE), VG_GRAPHIC.T_TRANSFORM.V_POSITION),
+				VG_GRAPHIC.L_LINES[i].C_COLOR,
+				VG_GRAPHIC.L_LINES[i].USI_DRAWMODE);
+			i++;
+			break;
+		case _CPCD_DM_RECT:
+			_CPCD_DRAWRECT(CPCD_CANVAS,
+				_CPCD_VECADD(_CPCD_VECMULTI(VG_GRAPHIC.L_LINES[i].V_POS_ONE, VG_GRAPHIC.T_TRANSFORM.V_SCALE), VG_GRAPHIC.T_TRANSFORM.V_POSITION),
+				_CPCD_VECADD(_CPCD_VECMULTI(VG_GRAPHIC.L_LINES[i].V_POS_TWO, VG_GRAPHIC.T_TRANSFORM.V_SCALE), VG_GRAPHIC.T_TRANSFORM.V_POSITION),
+				VG_GRAPHIC.L_LINES[i].C_COLOR,
+				VG_GRAPHIC.L_LINES[i].USI_DRAWMODE);
+			break;
+		}
+	}
+}
+void _CPCD_VG_DRAWLINE(_CPCD_VECGRAPHIC * VG_GRAPHIC, _CPCD_ALIASVECTOR V_LEFT, _CPCD_ALIASVECTOR V_RIGH, _CPCD_ALIASCOLOR C_COLOR) {
+	_CPCD_VG_PUSHLINE(VG_GRAPHIC, (_CPCD_UNIONLINE) { V_LEFT, V_RIGH, C_COLOR, _CPCD_DM_LINE, 0 });
+}
+void _CPCD_VG_DRAWRECT(_CPCD_VECGRAPHIC * VG_GRAPHIC, _CPCD_ALIASVECTOR V_LEFTUPPER, _CPCD_ALIASVECTOR V_RIGHTBOT, _CPCD_ALIASCOLOR C_COLOR, _CPCD_DATA_DRAWMODE DM_MODE) {
+	_CPCD_VG_PUSHLINE(VG_GRAPHIC, (_CPCD_UNIONLINE) { V_LEFTUPPER, V_RIGHTBOT, C_COLOR, _CPCD_DM_RECT, DM_MODE });
+}
+void _CPCD_VG_DRAWTRI(_CPCD_VECGRAPHIC * VG_GRAPHIC, _CPCD_ALIASVECTOR V_ONE, _CPCD_ALIASVECTOR V_TWO, _CPCD_ALIASVECTOR V_THREE, _CPCD_ALIASCOLOR C_COLOR, _CPCD_DATA_DRAWMODE DM_MODE) {
+	_CPCD_VG_PUSHLINE(VG_GRAPHIC, (_CPCD_UNIONLINE) { V_ONE, V_TWO, C_COLOR, _CPCD_DM_TRI, DM_MODE });
+	_CPCD_VG_PUSHLINE(VG_GRAPHIC, (_CPCD_UNIONLINE) { V_TWO, V_THREE, C_COLOR, _CPCD_DM_TRI, DM_MODE });
+}
+_CPCD_ALIASCOLOR _CPCD_COLORSUB(_CPCD_ALIASCOLOR C_ONE, _CPCD_ALIASCOLOR C_TWO) {
+#ifdef _CPCD_FULLRGB
+	return (_CPCD_ALIASCOLOR) {
+		(C_ONE.R - C_TWO.R) % 255,
+			(C_ONE.G - C_TWO.G) % 255,
+			(C_ONE.B - C_TWO.B) % 255
+	};
+#else			 
+	return C_ONE - C_TWO;
+#endif
+}
+_CPCD_ALIASCOLOR _CPCD_COLORDIV(_CPCD_ALIASCOLOR C_ONE, _CPCD_ALIASCOLOR C_TWO) {
+#ifdef _CPCD_FULLRGB
+	return (_CPCD_ALIASCOLOR) {
+		(C_ONE.R / C_TWO.R) % 255,
+			(C_ONE.G / C_TWO.G) % 255,
+			(C_ONE.B / C_TWO.B) % 255
+	};
+#else			 
+	return C_ONE / C_TWO;
+#endif
+}
+_CPCD_ALIASCOLOR _CPCD_COLORMULTI(_CPCD_ALIASCOLOR C_ONE, _CPCD_ALIASCOLOR C_TWO) {
+#ifdef _CPCD_FULLRGB
+	return (_CPCD_ALIASCOLOR) {
+		(C_ONE.R * C_TWO.R) % 255,
+			(C_ONE.G * C_TWO.G) % 255,
+			(C_ONE.B * C_TWO.B) % 255
+	};
+#else
+	return C_ONE * C_TWO;
+#endif
+}
+_CPCD_ALIASCOLOR _CPCD_COLORADD(_CPCD_ALIASCOLOR C_ONE, _CPCD_ALIASCOLOR C_TWO) {
+#ifdef _CPCD_FULLRGB
+	return (_CPCD_ALIASCOLOR) {
+		(C_ONE.R + C_TWO.R) % 255,
+			(C_ONE.G + C_TWO.G) % 255,
+			(C_ONE.B + C_TWO.B) % 255
+	};
+#else
+	return C_ONE + C_TWO;
+#endif
+}
+int _CPCD_COLORCMP(_CPCD_ALIASCOLOR C_ONE, _CPCD_ALIASCOLOR C_TWO)
+{
+#ifdef _CPCD_FULLRGB
+	if (C_ONE.R == C_TWO.R &&
+		C_ONE.G == C_TWO.G &&
+		C_ONE.B == C_TWO.B)return 1;
+#else
+	if (C_ONE == C_TWO)return 1;
+#endif
+	return 0;
+}
+int _CPCD_VECCMP(_CPCD_ALIASVECTOR V_ONE, _CPCD_ALIASVECTOR V_TWO) {
+	if (V_ONE.X == V_TWO.X &&V_ONE.Y == V_TWO.Y)return 1;
+	return 0;
+}
+_CPCD_ALIASVECTOR _CPCD_VECADD(_CPCD_ALIASVECTOR V_ONE, _CPCD_ALIASVECTOR V_TWO) {
+	return (_CPCD_ALIASVECTOR) { V_ONE.X + V_TWO.X, V_ONE.Y + V_TWO.Y };
+}
+_CPCD_ALIASVECTOR _CPCD_VECSUB(_CPCD_ALIASVECTOR V_ONE, _CPCD_ALIASVECTOR V_TWO) {
+	return (_CPCD_ALIASVECTOR) { V_ONE.X - V_TWO.X, V_ONE.Y - V_TWO.Y };
+}
+_CPCD_ALIASVECTOR _CPCD_VECMULTI(_CPCD_ALIASVECTOR V_ONE, _CPCD_ALIASVECTOR V_TWO) {
+	return (_CPCD_ALIASVECTOR) { V_ONE.X * V_TWO.X, V_ONE.Y * V_TWO.Y };
+}
+_CPCD_ALIASVECTOR _CPCD_VECDIV(_CPCD_ALIASVECTOR V_ONE, _CPCD_ALIASVECTOR V_TWO) {
+	return (_CPCD_ALIASVECTOR) { V_ONE.X / V_TWO.X, V_ONE.Y / V_TWO.Y };
+}
