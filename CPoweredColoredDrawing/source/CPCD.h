@@ -16,13 +16,14 @@
 #pragma comment(lib, "User32.lib")
 #pragma comment(lib, "Gdi32.lib")
 
-#define _CPCD_FULLRGB	
-#define _CPCD_WINDOW				
-#define _CPCD_NOBUFFER_
-#define _CPCD_ONLYBUFFER
-#define _CPCD_SINGLEFRAME_	
-#define _CPCD_SHOWCONSOL		
-#define _CPCD_USEDYNAMICQUALITY
+#define _CPCD_TRUE 0x1FFF
+#define _CPCD_FALSE 0x0FFF
+
+#define _CPCD_USE_FULLRGB			_CPCD_TRUE
+#define _CPCD_USE_SINGLEFRAME		_CPCD_FALSE	
+#define _CPCD_USE_SHOWCONSOL		_CPCD_TRUE		
+#define _CPCD_USE_DYNAMICQUALITY	_CPCD_TRUE
+
 
 #define _CPCD_QUALITY		0.001F
 #define _CPCD_BACKCOLOR		0
@@ -33,8 +34,6 @@
 #define _CPCD_DATA_ULINT	unsigned long int
 #define _CPCD_DATA_RAT		short int
 #define _CPCD_DATA_UINT		unsigned int
-
-#ifdef _CPCD_WINDOW
 
 #define _CPCD_WINDOW_WINAME	"win32"
 #define _CPCD_WINDOW_WIDTH	16*63
@@ -52,6 +51,24 @@
 #define _CPCD_DATA_COLR		COLORREF
 #define _CPCD_DATA_HBITM	HBITMAP
 #define _CDD_DATA_TIME		time_t
+
+
+#if _CPCD_USE_DYNAMICQUALITY == _CPCD_TRUE
+#define _CPCD_USEDYNAMICQUALITY
+#endif
+
+#if _CPCD_USE_SHOWCONSOL == _CPCD_TRUE
+#define _CPCD_SHOWCONSOL
+#endif
+
+#if _CPCD_USE_SINGLEFRAME == _CPCD_TRUE
+#define _CPCD_SINGLEFRAME
+#endif
+
+#if _CPCD_USE_FULLRGB == _CPCD_TRUE
+#define _CPCD_FULLRGB
+#endif
+
 
 #define _CPCD_ALIASWINDOW	CPCD_WINDOW
 typedef struct _CPCD_ALIASWINDOW _CPCD_ALIASWINDOW;
@@ -74,7 +91,7 @@ struct _CPCD_ALIASWINDOW {
 #define _CPCD_MAIN		    _CPCD_DATA_DEF		_CPCD_MAIN_F	(_CPCD_DATA_HWND hwnd_handle)
 #define _CPCD_END			void				_CPCD_END_F		(_CPCD_DATA_WPARAM wpr_wparam,_CPCD_DATA_ULINT ui_frame)
 
-#endif
+
 
 #define _CPCD_DM_FILLED		0x1FF
 #define _CPCD_DM_OUTLINE	0x0FF
@@ -144,7 +161,7 @@ struct _CPCD_UNIONLINE {
 };
 struct _CPCD_VECGRAPHIC {
 	_CPCD_UNIONLINE*		L_LINES;
-	_CPCD_DATA_DEF			USI_SINZE;
+	_CPCD_DATA_DEF			USI_SIZE;
 	_CPCD_UNIONTRANS		T_TRANSFORM;
 };
 
@@ -177,6 +194,12 @@ typedef struct _CPCD_C_CHAR _CPCD_C_CHAR;
 struct _CPCD_C_CHAR {
 	char * C_VALUE;
 };
+_CPCD_C_CHAR C_CHARLIST[255];
+
+#define _CPCD_CHARTRUE	'1'
+#define _CPCD_CHARFALSE	'0'
+
+
 
 _CPCD_ALIAS			_CPCD_CREATE		(_CPCD_DATA_DEF		USI_WIDTH,
 										_CPCD_DATA_DEF		USI_HEIGHT);
@@ -286,6 +309,5 @@ _CPCD_ALIASVECTOR	_CPCD_VECMULTI		(_CPCD_ALIASVECTOR V_ONE,
 
 _CPCD_ALIASVECTOR	_CPCD_VECDIV		(_CPCD_ALIASVECTOR V_ONE,
 										_CPCD_ALIASVECTOR V_TWO);
-
 
 
