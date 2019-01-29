@@ -4,7 +4,9 @@
 //		    CPU based rendering
 //				  V3.0.0
 
+
 #pragma once
+
 
 #include <stdio.h>
 #include <time.h>
@@ -18,8 +20,9 @@
 #define _CPCD_WINDOW				
 #define _CPCD_NOBUFFER_
 #define _CPCD_ONLYBUFFER
-#define _CPCD_SINGLEFRAME	
+#define _CPCD_SINGLEFRAME_	
 #define _CPCD_SHOWCONSOL		
+#define _CPCD_USEDYNAMICQUALITY
 
 #define _CPCD_QUALITY		0.001F
 #define _CPCD_BACKCOLOR		0
@@ -165,6 +168,16 @@ struct _CPCD_SPRITE {
 #define _CPCD_C_REDBLUE		0x13C	
 #define _CPCD_C_BLUEGRN		0x23C	
 
+#define _CPCD_C_CHAR		CPCD_C_CHAR
+#define _CPCD_CHARWIDTH		4
+#define _CPCD_CHARHEIGTH	5
+#define _CPCD_SPACING		1
+
+typedef struct _CPCD_C_CHAR _CPCD_C_CHAR;
+struct _CPCD_C_CHAR {
+	char * C_VALUE;
+};
+
 _CPCD_ALIAS			_CPCD_CREATE		(_CPCD_DATA_DEF		USI_WIDTH,
 										_CPCD_DATA_DEF		USI_HEIGHT);
 
@@ -234,6 +247,14 @@ void				_CPCD_VG_DRAWLINE	(_CPCD_VECGRAPHIC*	VG_GRAPHIC,
 void				_CPCD_SETPIXEL		(_CPCD_ALIAS*		CPCD_CANVAS,
 										_CPCD_ALIASVECTOR	V_POINT,
 										_CPCD_ALIASCOLOR		C_COLOR);
+
+void				_CPCD_DRAWSTRING	(_CPCD_ALIAS*		CPCD_CANVAS,
+										_CPCD_DATA_STRING	C_TEXT,
+										_CPCD_DATA_DEF		USI_LENGTH,
+										_CPCD_ALIASVECTOR	V_POINT,
+										_CPCD_DATA_DEF		I_SCALE,
+										_CPCD_ALIASCOLOR	C_COLOR);
+
 _CPCD_ALIASCOLOR	_CPCD_GETPIXEL		(_CPCD_ALIAS*		CPCD_CANVAS,
 										_CPCD_ALIASVECTOR	V_POINT);
 

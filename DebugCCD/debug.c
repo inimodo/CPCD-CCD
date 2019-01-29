@@ -12,6 +12,7 @@ _CPCD_ALIASCOLOR cpushader(_CPCD_ALIASCOLOR c_pixelvalue, _CPCD_ALIASVECTOR v_pi
 	return c_pixelvalue;
 }
 _CPCD_UPDATE{
+
 	int t_time = clock();
 
 	_CPCD_CLEAR(&c_canvas);
@@ -27,7 +28,13 @@ _CPCD_UPDATE{
 	_CPCD_DRAWLINE(&c_canvas, _CPCD_LEFTDOWN, _CPCD_CENTER, (_CPCD_ALIASCOLOR) { 255, 0, 255 });
 	_CPCD_DRAWLINE(&c_canvas, _CPCD_CENTER, _CPCD_RIGHTDOWN, (_CPCD_ALIASCOLOR) { 255, 255, 0 });
 
+
+	_CPCD_DRAWSTRING(&c_canvas, "ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789#.:,;", 42, _CPCD_CENTER, 2, (_CPCD_ALIASCOLOR) { 255, 255, 255 });
+
+
 	_CPCD_DRAWBUFFER(&c_canvas);
+
+
 
 	printf("%d ms @ ", clock() - t_time);
 	printf("%d fps\n", 1000 / (clock() - t_time));
