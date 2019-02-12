@@ -20,13 +20,72 @@
 
 void _CPCD_INIT();
 
-_CPCD_DATA_WNDC wc;
+_CPCD_DATA_WNDC wc_window;
 _CPCD_DATA_HWND hwnd;
 _CPCD_DATA_MSG Msg;
 _CPCD_DATA_ULINT ui_frame = 0;
 _CPCD_DATA_HDC hdc_frame;
 
+long __stdcall WndProc(_CPCD_DATA_HWND hwnds, _CPCD_DATA_UINT UI_MSG, _CPCD_DATA_WPARAM wParam, _CPCD_DATA_LPARAM lParam) {
 
+	_CPCD_PROCESSEVENT(_CPCD_ELEMENT_F(), UI_MSG);
+	
+	if (UI_MSG == WM_CLOSE)DestroyWindow(hwnds);
+	else if (UI_MSG == WM_DESTROY)PostQuitMessage(0);
+	else return DefWindowProcA(hwnds, UI_MSG, wParam, lParam);
+	return 0;
+}
+int __stdcall WinMain(_CPCD_DATA_HINTS hInstance, _CPCD_DATA_HINTS hPrevInstance, _CPCD_DATA_LPSTR lpCmdLine, int nCmdShow) {
+
+#ifdef _CPCD_SHOWCONSOL
+	AllocConsole();
+	freopen(_CPCD_WINDOW_CONSOLE);
+	printf(_CPCD_WINDOW_DEFAULT);
+#endif
+
+	
+	wc_window.hbrBackground = (_CPCD_DATA_HBRUSH)(2);
+	wc_window.cbSize = sizeof(_CPCD_DATA_WNDC);
+	wc_window.lpfnWndProc = WndProc;
+	wc_window.hInstance = hInstance;
+	wc_window.lpszClassName = _CPCD_WINDOW_CLASS;
+	wc_window.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+
+	if (!RegisterClassEx(&wc_window))return 0;
+	
+
+	hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, _CPCD_WINDOW_CLASS, _CPCD_WINDOW_WINAME, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, _CPCD_WINDOW_WIDTH, _CPCD_WINDOW_HEIGHT, NULL, NULL, hInstance, NULL);
+	if (hwnd == NULL)return 0;
+
+	if (_CPCD_MAIN_F(hwnd) != 0)return 0;
+
+	ShowWindow(hwnd, nCmdShow);
+	UpdateWindow(hwnd);
+	hdc_frame = GetDC(hwnd);
+
+	_CPCD_INIT();
+
+	_CDD_DATA_TIME t_pasttime = clock();
+
+	while (GetMessage(&Msg, NULL, 0, 0) > 0) {
+
+#ifdef _CPCD_SINGLEFRAME
+		if (ui_frame == 0)
+#endif 
+			if (_CPCD_UPDATE_F(ui_frame, clock() - t_pasttime, Msg) != 0)return 0;
+
+		t_pasttime = clock();
+
+		TranslateMessage(&Msg);
+		DispatchMessage(&Msg);
+
+		ui_frame++;
+
+	}
+	_CPCD_END_F(Msg.wParam, ui_frame);
+	ReleaseDC(NULL, hdc_frame);
+	return Msg.wParam;
+}
 
 _CPCD_ALIAS _CPCD_CREATE(_CPCD_DATA_DEF USI_WIDTH, _CPCD_DATA_DEF USI_HEIGTH)
 {
@@ -141,71 +200,6 @@ void _CPCD_SETPIXEL(_CPCD_ALIAS* CPCD_CANVAS, _CPCD_ALIASVECTOR V_POINT, _CPCD_A
 	if (V_POINT.X >= 0 && V_POINT.Y >= 0 && V_POINT.X < CPCD_CANVAS->USI_WIDTH && V_POINT.Y < CPCD_CANVAS->USI_HEIGHT) {
 		CPCD_CANVAS->C_COLOR[V_POINT.Y][V_POINT.X] = C_COLOR;
 	}
-}
-
-
-#ifndef _CPCD_FULLAC
-_CPCD_STARTUP{
-	_CPCD_ALIASWINDOW win = { 1000, 500, 2, _CPCD_WINDOW_WINAME };
-	return &win;
-}
-#endif
-
-long __stdcall WndProc(_CPCD_DATA_HWND hwnd, _CPCD_DATA_UINT msg, _CPCD_DATA_WPARAM wParam, _CPCD_DATA_LPARAM lParam) {
-	if (msg == WM_CLOSE)DestroyWindow(hwnd);
-	else if (msg == WM_DESTROY)PostQuitMessage(0);
-	else return DefWindowProc(hwnd, msg, wParam, lParam);
-	return 0;
-}
-int __stdcall WinMain(_CPCD_DATA_HINTS hInstance, _CPCD_DATA_HINTS hPrevInstance, _CPCD_DATA_LPSTR lpCmdLine, int nCmdShow) {
-#ifdef _CPCD_SHOWCONSOL
-	AllocConsole();
-	freopen(_CPCD_WINDOW_CONSOLE);
-#endif
-	printf(_CPCD_WINDOW_DEFAULT);
-
-
-	_CPCD_ALIASWINDOW* win_window = _CPCD_STARTUP_F(hInstance, hPrevInstance, lpCmdLine, nCmdShow);
-
-	wc.hbrBackground = (_CPCD_DATA_HBRUSH)(win_window->USI_BACKCOLOR); wc.cbSize = sizeof(_CPCD_DATA_WNDC);
-	wc.lpfnWndProc = WndProc; wc.hInstance = hInstance;
-	wc.lpszClassName = _CPCD_WINDOW_CLASS; wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
-
-	if (!RegisterClassEx(&wc))return 0;
-
-	hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, _CPCD_WINDOW_CLASS, _CPCD_WINDOW_WINAME, WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, CW_USEDEFAULT, _CPCD_WINDOW_WIDTH, _CPCD_WINDOW_HEIGHT, NULL, NULL, hInstance, NULL);
-
-	if (hwnd == NULL)return 0;
-
-	ShowWindow(hwnd, nCmdShow);
-	UpdateWindow(hwnd);
-	hdc_frame = GetDC(hwnd);
-
-	if (_CPCD_MAIN_F(hwnd) != 0)return 0;
-	_CPCD_INIT();
-
-	_CPCD_DATA_RAT us_switch = 1;
-	_CDD_DATA_TIME t_pasttime = clock();
-	while (GetMessage(&Msg, NULL, 0, 0) > 0) {
-#ifdef _CPCD_SINGLEFRAME
-		if (ui_frame == 0)
-#endif 
-			if (_CPCD_UPDATE_F(ui_frame, clock() - t_pasttime, Msg) != 0)return 0;
-		t_pasttime = clock();
-		if (us_switch == 1) {
-			TranslateMessage(&Msg);
-			DispatchMessage(&Msg);
-		}
-		ui_frame++;
-		if (GetAsyncKeyState(VK_NUMPAD0) != 0) {
-			us_switch *= -1;
-			Sleep(200);
-		}
-	}
-	_CPCD_END_F(Msg.wParam, ui_frame);
-	ReleaseDC(NULL, hdc_frame);
-	return Msg.wParam;
 }
 void _CPCD_DRAWBUFFER(_CPCD_ALIAS* CPCD_CANVAS) {
 	_CPCD_DATA_COLR *col_buffer = (_CPCD_DATA_COLR*)malloc(CPCD_CANVAS->USI_HEIGHT * CPCD_CANVAS->USI_WIDTH * sizeof(_CPCD_DATA_COLR));
@@ -459,6 +453,12 @@ _CPCD_ALIASVECTOR _CPCD_VECMULTI(_CPCD_ALIASVECTOR V_ONE, _CPCD_ALIASVECTOR V_TW
 _CPCD_ALIASVECTOR _CPCD_VECDIV(_CPCD_ALIASVECTOR V_ONE, _CPCD_ALIASVECTOR V_TWO) {
 	return (_CPCD_ALIASVECTOR) { V_ONE.X / V_TWO.X, V_ONE.Y / V_TWO.Y };
 }
+_CPCD_ALIASVECTOR _CPCD_CURSORPOS(){
+	POINT p_pos;
+	GetCursorPos(&p_pos);
+	ScreenToClient(hwnd, &p_pos);
+	return (_CPCD_ALIASVECTOR) { p_pos.x, p_pos.y};
+}
 void _CPCD_DRAWSTRING(_CPCD_ALIAS* CPCD_CANVAS, _CPCD_DATA_STRING C_TEXT, _CPCD_DATA_DEF	USI_LENGTH, _CPCD_ALIASVECTOR V_POINT, _CPCD_DATA_DEF I_SCALE, _CPCD_ALIASCOLOR	C_COLOR){
 	_CPCD_ALIASVECTOR v_cursor = V_POINT;
 	_CPCD_DATA_DEF i_cursor = 0;
@@ -469,7 +469,6 @@ void _CPCD_DRAWSTRING(_CPCD_ALIAS* CPCD_CANVAS, _CPCD_DATA_STRING C_TEXT, _CPCD_
 				v_cursor.X = i_cursor + V_POINT.X+ i_width;
 				v_cursor.Y = V_POINT.Y+ i_heigth;
 				if (C_CHARLIST[C_TEXT[i]].C_VALUE[((i_heigth/ I_SCALE )*_CPCD_CHARWIDTH )+ (i_width/ I_SCALE)] == _CPCD_CHARTRUE) {
-
 					_CPCD_SETPIXEL(CPCD_CANVAS, v_cursor, C_COLOR);
 				}
 				else {
@@ -477,4 +476,93 @@ void _CPCD_DRAWSTRING(_CPCD_ALIAS* CPCD_CANVAS, _CPCD_DATA_STRING C_TEXT, _CPCD_
 			}
 		}
 	}
+}
+void _CPCD_PROCESSEVENT(_CPCD_ELEMENT_LIST * EL_LIST, _CPCD_DATA_UINT UI_MSG) {
+	if (EL_LIST == _CPCD_NULL || (*EL_LIST).E_ELEMENTS == 0)return;
+	_CPCD_EVENT e_event;
+	for (_CPCD_DATA_DEF i_index = 0; i_index < (*EL_LIST).USI_ELEMENTS; i_index++) {
+		if ((*EL_LIST).E_ELEMENTS[i_index].USI_ELEMENT == _CPCD_EI_EMPTY) continue;
+		
+		e_event.USI_ELEMENT = (*EL_LIST).E_ELEMENTS[i_index].USI_ELEMENT;
+		e_event.USI_INDEX = i_index;
+		e_event.UI_MSG = UI_MSG;
+
+		printf("_>%p\n", (*EL_LIST).E_ELEMENTS[i_index].V_ELEMENT);
+
+		switch (UI_MSG)
+		{
+		case WM_LBUTTONUP:
+			if ((*EL_LIST).E_ELEMENTS[i_index].USI_ELEMENT == _CPCD_EI_FIELD) {
+				
+				_CPCD_ELEMENT_FIELD e_field = *(_CPCD_ELEMENT_FIELD*)(*EL_LIST).E_ELEMENTS[i_index].V_ELEMENT;
+				if (_CPCD_INREAGION(_CPCD_CURSORPOS(), e_field.USI_WIDTH, e_field.USI_HEIGHT, (*EL_LIST).E_ELEMENTS[i_index].V_POSITION)) {
+					e_field.F_EVENT_CLICK(e_event);
+				}
+			}
+			break;
+		case WM_LBUTTONDOWN:
+			if ((*EL_LIST).E_ELEMENTS[i_index].USI_ELEMENT == _CPCD_EI_FIELD) {
+				_CPCD_ELEMENT_FIELD e_field = *(_CPCD_ELEMENT_FIELD*)(*EL_LIST).E_ELEMENTS[i_index].V_ELEMENT;
+				printf("TEST\n");
+
+				if (_CPCD_INREAGION(_CPCD_CURSORPOS(), e_field.USI_WIDTH, e_field.USI_HEIGHT, (*EL_LIST).E_ELEMENTS[i_index].V_POSITION)) {
+					e_field.F_EVENT_CLICKED(e_event);
+				}
+			}
+			break;
+		case WM_MOUSEMOVE: 
+			if ((*EL_LIST).E_ELEMENTS[i_index].USI_ELEMENT == _CPCD_EI_FIELD) {
+				
+				_CPCD_ELEMENT_FIELD e_field = *(_CPCD_ELEMENT_FIELD*)(*EL_LIST).E_ELEMENTS[i_index].V_ELEMENT;
+				if (_CPCD_INREAGION(_CPCD_CURSORPOS(), e_field.USI_WIDTH, e_field.USI_HEIGHT, (*EL_LIST).E_ELEMENTS[i_index].V_POSITION)) {
+					e_field.F_EVENT_HOVER(e_event);
+				}
+			}
+			break;
+		}
+
+
+	}
+}
+void _CPCD_PUSHELEMENT(_CPCD_ELEMENT_LIST * EL_LIST, _CPCD_ELEMENT E_ELEMENT ) {
+	if ((*EL_LIST).USI_ELEMENTS <= 0) {
+		(*EL_LIST).USI_ELEMENTS = 1;
+		(*EL_LIST).E_ELEMENTS = malloc(sizeof(_CPCD_DATA_DEF));
+		(*EL_LIST).E_ELEMENTS[0] = E_ELEMENT;
+	}
+	else {
+		(*EL_LIST).USI_ELEMENTS += 1;
+	}
+	_CPCD_ELEMENT_LIST el_item;
+	el_item.USI_ELEMENTS = (*EL_LIST).USI_ELEMENTS;
+	el_item.E_ELEMENTS = malloc(sizeof(_CPCD_ELEMENT)*(*EL_LIST).USI_ELEMENTS);
+
+	for (_CPCD_DATA_DEF i_index = 0; i_index < (*EL_LIST).USI_ELEMENTS-1; i_index++){
+		el_item.E_ELEMENTS[i_index] = (*EL_LIST).E_ELEMENTS[i_index];
+	}
+	el_item.E_ELEMENTS[(*EL_LIST).USI_ELEMENTS - 1] = E_ELEMENT;
+
+	(*EL_LIST).E_ELEMENTS = malloc(sizeof(_CPCD_ELEMENT)*(*EL_LIST).USI_ELEMENTS);;
+
+	for (_CPCD_DATA_DEF i_index = 0; i_index < (*EL_LIST).USI_ELEMENTS; i_index++){
+		(*EL_LIST).E_ELEMENTS[i_index] = el_item.E_ELEMENTS[i_index];
+	}
+
+	free(el_item.E_ELEMENTS);
+}
+
+_CPCD_ELEMENT _CPCD_FILLELEMENT(_CPCD_DATA_DEF USI_ELEMENT, _CPCD_ALIASVECTOR V_POSITION, void * V_ELEMENT)
+{
+	_CPCD_ELEMENT e_element;
+	e_element.USI_ELEMENT = USI_ELEMENT;
+	e_element.V_POSITION = V_POSITION;
+	e_element.V_ELEMENT = V_ELEMENT;
+	return e_element;
+}
+
+int _CPCD_INREAGION(_CPCD_ALIASVECTOR V_POS, _CPCD_DATA_DEF USI_WIDTH, _CPCD_DATA_DEF USI_HEIGHT, _CPCD_ALIASVECTOR V_ANCHOR)
+{
+	if (V_ANCHOR.X <= V_POS.X && (V_ANCHOR.X + V_ANCHOR.X) >= V_POS.X
+		&& V_ANCHOR.Y <= V_POS.Y && (V_ANCHOR.Y + V_ANCHOR.Y) >= V_POS.Y)return 1;
+	return 0;
 }
