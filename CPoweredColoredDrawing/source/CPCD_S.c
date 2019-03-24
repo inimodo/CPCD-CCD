@@ -1,9 +1,9 @@
 #include"CPCD.h"
 
 void _CPCD_INIT() {
-	for (_CPCD_DATA_DEF i = 0; i < 255; i++) {
+	for (_CPCD_INT i = 0; i < 255; i++) {
 		C_CHARLIST[i].C_VALUE = malloc(sizeof(char)*_CPCD_CHARWIDTH*_CPCD_CHARHEIGTH);
-		for (_CPCD_DATA_DEF i_index = 0; i_index < (_CPCD_CHARWIDTH*_CPCD_CHARHEIGTH); i_index++) {
+		for (_CPCD_INT i_index = 0; i_index < (_CPCD_CHARWIDTH*_CPCD_CHARHEIGTH); i_index++) {
 			C_CHARLIST[i].C_VALUE[i_index] = _CPCD_CHARTRUE;
 		}
 	}
