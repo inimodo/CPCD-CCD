@@ -1,5 +1,7 @@
 #include"CPCD.h"
 
+extern _CPCD_C_CHAR C_CHARLIST[255];
+
 void _CPCD_INIT() {
 	for (_CPCD_INT i = 0; i < 255; i++) {
 		C_CHARLIST[i].C_VALUE = malloc(sizeof(char)*_CPCD_CHARWIDTH*_CPCD_CHARHEIGTH);
