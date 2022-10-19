@@ -74,11 +74,11 @@ _CPCD_UPDATE{
 	e_element.V_POSITION = v_cpos;
 
 
-	//for (int i = 0; i < e_list.USI_ELEMENTS; i++)
-	//{
-	//	_CPCD_ELEMENTRENDER(&c_canvas, es_styletest, e_list.E_ELEMENTS[i]);
-	//	
-	//}
+	for (int i = 0; i < e_list.USI_ELEMENTS; i++)
+	{
+		_CPCD_ELEMENTRENDER(&c_canvas, es_styletest, e_list.E_ELEMENTS[i]);
+		
+	}
 
 	_CPCD_DRAWBUFFER(&c_canvas);
 	_CPCD_CLEAR(&c_canvas, (_CPCD_COLOR) { 0, 0, 0 });

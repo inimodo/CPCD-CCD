@@ -266,9 +266,9 @@ struct _CPCD_ELEMENT_LIST {
 #define _CPCD_UPDATE_F		cdd_update
 #define _CPCD_ELEMENT_F		cdd_element
 
-#define _CPCD_UPDATE		_CPCD_INT		_CPCD_UPDATE_F	(_CPCD_INT ui_frame,_CPCD_INT ui_time,_CPCD_DATA_MSG msg_info)
+#define _CPCD_UPDATE		_CPCD_INT		_CPCD_UPDATE_F	(_CPCD_INT ui_frame,_CPCD_INT ui_time)
 #define _CPCD_MAIN		    _CPCD_INT		_CPCD_MAIN_F	(_CPCD_DATA_HWND hwnd_handle)
-#define _CPCD_END			void				_CPCD_END_F		(_CPCD_DATA_WPARAM wpr_wparam,_CPCD_INT ui_frame)
+#define _CPCD_END			void				_CPCD_END_F		()
 #define _CPCD_EVENTS		_CPCD_ELEMENT_LIST	*			_CPCD_ELEMENT_F ()
 
 _CPCD_UPDATE;

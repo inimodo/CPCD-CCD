@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27428.2015
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CPoweredColoredDrawing", "CPoweredColoredDrawing\CPoweredColoredDrawing.vcxproj", "{2BF42912-301A-494A-B2E5-2AE0219C16A5}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CPCD", "CPoweredColoredDrawing\CPoweredColoredDrawing.vcxproj", "{2BF42912-301A-494A-B2E5-2AE0219C16A5}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DebugCCD", "DebugCCD\DebugCCD.vcxproj", "{A42771E7-8734-4ABB-9843-BA483926BCC6}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CCD", "CCD\CCD.vcxproj", "{1BA8ED40-EFF0-490D-88B5-7437ECD4F785}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -31,6 +33,14 @@ Global
 		{A42771E7-8734-4ABB-9843-BA483926BCC6}.Release|x64.Build.0 = Release|x64
 		{A42771E7-8734-4ABB-9843-BA483926BCC6}.Release|x86.ActiveCfg = Release|Win32
 		{A42771E7-8734-4ABB-9843-BA483926BCC6}.Release|x86.Build.0 = Release|Win32
+		{1BA8ED40-EFF0-490D-88B5-7437ECD4F785}.Debug|x64.ActiveCfg = Debug|x64
+		{1BA8ED40-EFF0-490D-88B5-7437ECD4F785}.Debug|x64.Build.0 = Debug|x64
+		{1BA8ED40-EFF0-490D-88B5-7437ECD4F785}.Debug|x86.ActiveCfg = Debug|Win32
+		{1BA8ED40-EFF0-490D-88B5-7437ECD4F785}.Debug|x86.Build.0 = Debug|Win32
+		{1BA8ED40-EFF0-490D-88B5-7437ECD4F785}.Release|x64.ActiveCfg = Release|x64
+		{1BA8ED40-EFF0-490D-88B5-7437ECD4F785}.Release|x64.Build.0 = Release|x64
+		{1BA8ED40-EFF0-490D-88B5-7437ECD4F785}.Release|x86.ActiveCfg = Release|Win32
+		{1BA8ED40-EFF0-490D-88B5-7437ECD4F785}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

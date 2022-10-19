@@ -26,6 +26,23 @@ _CPCD_DATA_WNDC wc_window;
 static _CPCD_DATA_HWND hw_handle;
 static _CPCD_DATA_HDC hdc_frame;
 
+DWORD __stdcall wWinProcess(LPVOID lp_Void)
+{
+	_CPCD_INT ui_frame = 0;
+
+	_CDD_DATA_TIME t_pasttime = clock();
+
+	while (_CPCD_UPDATE_F(ui_frame, clock() - t_pasttime) == 0)
+	{
+		t_pasttime = clock();
+		ui_frame++;
+	}
+	_CPCD_END_F();
+
+
+	return 0;
+}
+
 long __stdcall WndProc(_CPCD_DATA_HWND hwnds, _CPCD_UINT UI_MSG, _CPCD_DATA_WPARAM wParam, _CPCD_DATA_LPARAM lParam) {
 
 
@@ -58,7 +75,6 @@ int __stdcall WinMain(_CPCD_DATA_HINTS hInstance, _CPCD_DATA_HINTS hPrevInstance
 	wc_window.lpszClassName = _CPCD_WINDOW_CLASS;
 	wc_window.hIconSm = LoadIcon(hInstance, IDI_APPLICATION);
 
-	static _CPCD_INT ui_frame = 0;
 	static _CPCD_DATA_MSG msg_feedback;
 
 	if (!RegisterClassEx(&wc_window)) {
@@ -96,21 +112,12 @@ int __stdcall WinMain(_CPCD_DATA_HINTS hInstance, _CPCD_DATA_HINTS hPrevInstance
 	hdc_frame = GetDC(hw_handle);
 
 
-	_CDD_DATA_TIME t_pasttime = clock();
+	HANDLE hwd_Thread = CreateThread(0, 0, wWinProcess, 0, 0, NULL);
 
 	while (GetMessage(&msg_feedback, NULL, 0, 0) > 0) {
-
-#ifdef _CPCD_SINGLEFRAME
-		if (ui_frame == 0)
-#endif 
-			if (_CPCD_UPDATE_F(ui_frame, clock() - t_pasttime, msg_feedback) != 0)return 0;
-
-		t_pasttime = clock();
 		TranslateMessage(&msg_feedback);
 		DispatchMessage(&msg_feedback);
-		ui_frame++;
 	}
-	_CPCD_END_F(msg_feedback.wParam, ui_frame);
 	ReleaseDC(NULL, hdc_frame);
 	return msg_feedback.wParam;
 }
